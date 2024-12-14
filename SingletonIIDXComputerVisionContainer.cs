@@ -30,9 +30,9 @@ namespace cv_iidx_api
         //maybe get this from args or package it in the same directory
         private string scorecardModelFilePath = "resscreen.onnx";
         private string numbersModelFilePath = "score.onnx";
-/*
-        private string imageFilePath = "C:\\Users\\Jasper\\Downloads\\IMG_4269.png";
-        private string outImageFilePath = "C:\\Users\\Jasper\\Downloads\\fuck.png";*/
+
+        private string imageFilePath = "C:\\Users\\Jasper\\Downloads\\IMG_8924.jpg";
+        private string outImageFilePath = "C:\\Users\\Jasper\\Downloads\\fuck.png";
 
         private SingletonIIDXComputerVisionContainer()
         {
@@ -46,9 +46,9 @@ namespace cv_iidx_api
 
             SongList = JsonConvert.DeserializeObject<List<Song>>(jsonstring);
 
-            foreach(var i in SongList)
+            foreach (var i in SongList)
             {
-                SongArtistList.Add(i.Title + " | " + i.Artist);
+                SongArtistList.Add(i.Title + " " + i.Artist);
             }
 
             Console.WriteLine(SongList);
@@ -62,7 +62,8 @@ namespace cv_iidx_api
             NumbersPredictor = YoloV8Predictor.Create(numbersModelFilePath);
 
             //paddleocr reading
-            PaddleOcrPredictor = new PaddleOcrAll(PaddleOCR, PaddleDevice.Onnx()) { 
+            PaddleOcrPredictor = new PaddleOcrAll(PaddleOCR, PaddleDevice.Onnx())
+            {
                 AllowRotateDetection = true,
                 Enable180Classification = false,
             };
@@ -78,11 +79,11 @@ namespace cv_iidx_api
             Image copy = image.Clone(copy => copy.Crop(rectangle));
             return copy;
         }
-        
+
         public async Task<IIDXcvResults> ParseImage()
         {
             try
-            {/*
+            {
                 //image conversion
                 Image img = Image.Load(imageFilePath);
 
@@ -109,10 +110,7 @@ namespace cv_iidx_api
                 Console.WriteLine(GuessedSong);
 
                 //thoughts about moving the calculation stuff to the request handler instead. Because this singleton is a thread by itself it may be better to move it over to a different thread for calcs
-
                 return BPIandScore.CalculateBPI(GuessedSong, score, Difficulty.Another);
-                return new IIDXcvResults();*/
-                return new IIDXcvResults();
             }
             catch (Exception e) {
 
@@ -131,7 +129,7 @@ namespace cv_iidx_api
             var SongGuess = GuessResults.First();
 
 
-            return SongList[SongArtistList.FindIndex(x => x.Equals(SongGuess.Value))];
+            return SongList[SongGuess.Index];
         }
 
         async Task<int> ReadScore(Image score)
@@ -165,17 +163,37 @@ namespace cv_iidx_api
                 PaddleOcrResult result = PaddleOcrPredictor.Run(src);
                 foreach (var x in result.Regions)
                 {//filter to clean up results for fuzzy search
-                    if (x.Text == "SP" || x.Text == "DP" || x.Text == "BEGINNER" || x.Text == "HYPER" || x.Text == "ANOTHER" || x.Text == "NORMAL" || x.Text == "LEGGENDARIA" || x.Text == "NOTES")
+                    if (await IsBadWord(x.Text))
                     {
                         continue;
                     }
-                    songstring += x.Text;
-                    songstring += " ";
+                    songstring += x.Text + " ";
                 }
-                
+
             }
 
             return songstring;
+        }
+
+        async Task<bool> IsBadWord(string word)
+        {
+            // List of words that should be omitted
+            List<string> badwords = new List<string>() { "SP", "DP", "BEGINNER", "HYPER", "ANOTHER", "NORMAL", "LEGGENDARIA", "NOTES" };
+
+            var GuessResults = FuzzySharp.Process.ExtractOne(word, badwords); //use extract top temporarily for debugging check
+            //if word above threshold, drop it
+            //SP/DP : score 50
+            if (GuessResults.Value == "SP" || GuessResults.Value == "DP")
+            {
+                if (GuessResults.Score > 49)
+                {
+                    return true;
+                }
+            }
+
+            if (GuessResults.Score >= 80) {  return true; }
+
+            return false;
         }
 
         private static SingletonIIDXComputerVisionContainer instance = new SingletonIIDXComputerVisionContainer();
