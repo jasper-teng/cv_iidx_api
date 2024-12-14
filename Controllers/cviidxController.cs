@@ -1,6 +1,7 @@
 using cv_iidx_api;
 using Microsoft.AspNetCore.Mvc;
 using System.Drawing;
+using System.Drawing.Printing;
 
 namespace cv_iidx_api.Controllers
 {
@@ -24,34 +25,30 @@ namespace cv_iidx_api.Controllers
 
         
 
-        [HttpPost(Name = "cviidx")]
-        public IEnumerable<IIDXcvResults> Post([FromBody]BodyRes temp)
+        [HttpGet(Name = "cviidx")]
+        public async Task<IEnumerable<IIDXcvResults>> GetAsync([FromQuery]BodyRes uri)
         {
             Console.WriteLine("send to cv");
 
-            var askdj = temp;
+            Console.WriteLine(uri);
 
+            SingletonIIDXComputerVisionContainer parser = SingletonIIDXComputerVisionContainer.Instance;
 
             IIDXcvResults yrmom = new IIDXcvResults() { Artist = "your mother" };
-
-            List<IIDXcvResults> res = [yrmom];
-
-            //testing stuff
-
-            Song tempsong = new Song()
+            List<IIDXcvResults> res2 = [yrmom];
+            try
             {
-                Artist = "Falsion",
-                Title = "Feel The Beat",
-                Charts = new Dictionary<string, List<Chart>>()
-            };
+                IIDXcvResults results = await parser.ParseImage(uri.imgpath);
 
-            tempsong.Charts.Add("Single", new List<Chart> { new Chart() {Difficulty = Difficulty.Normal }, new Chart( ) { Difficulty = Difficulty.Another }, new Chart() { Difficulty = Difficulty.Leggendaria, notes = "1509", wr = "3013", avg = "2672", coef = "0.738874" } } );
+                //get the songlist
 
+                return new List<IIDXcvResults> { results };
+            }
+            catch (Exception ex) { 
 
-            //get the songlist
-            var x = BPIandScore.CalculateBPI(tempsong, 2923, Enum.Parse<Difficulty>("Leggendaria"));
+            }
 
-            return res;
+            return res2;
         }
     }
 }

@@ -5,5 +5,5 @@ Accept: application/json
 
 ###
 
-POST {{cv_iidx_api_HostAddress}}/cviidx/
+GET {{cv_iidx_api_HostAddress}}/cviidx/
 Accept: application/json

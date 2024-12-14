@@ -2,6 +2,6 @@
 {
     public interface ISingletonCVContainer
     {
-        Task<IIDXcvResults> ParseImage();
+        Task<IIDXcvResults> ParseImage(string embed);
     }
 }

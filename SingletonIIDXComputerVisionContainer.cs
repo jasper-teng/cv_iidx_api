@@ -11,6 +11,8 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using FuzzySharp;
+using System.Net;
+using System;
 
 namespace cv_iidx_api
 {
@@ -25,7 +27,7 @@ namespace cv_iidx_api
         private YoloV8Predictor ScoreCardPredictor;
         private YoloV8Predictor NumbersPredictor;
         private PaddleOcrAll PaddleOcrPredictor;
-
+        private WebClient client = new WebClient();
 
         //maybe get this from args or package it in the same directory
         private string scorecardModelFilePath = "resscreen.onnx";
@@ -68,7 +70,7 @@ namespace cv_iidx_api
                 Enable180Classification = false,
             };
 
-            var ouh = ParseImage();
+            //var ouh = ParseImage();
 
             //run the thing for debug
         }
@@ -80,14 +82,17 @@ namespace cv_iidx_api
             return copy;
         }
 
-        public async Task<IIDXcvResults> ParseImage()
+        public async Task<IIDXcvResults> ParseImage(string embed)
         {
             try
             {
+                //get image data
+                byte[] image = client.DownloadData(embed); 
+                
                 //image conversion
-                Image img = Image.Load(imageFilePath);
+                Image img = Image.Load(image);
 
-                var ScoreCardResult = ScoreCardPredictor.Detect(imageFilePath); //imagefilepath should be like whatever
+                var ScoreCardResult = ScoreCardPredictor.Detect(img); //imagefilepath should be like whatever
                                                                                 //you can pass in an Image class object also.
 
                 //work with the ScoreCardResult here.
